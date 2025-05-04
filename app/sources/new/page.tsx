@@ -1,8 +1,7 @@
 "use client"
 
-import React from "react"
-
-import { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,9 +24,10 @@ export default function NewSourcePage() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [events, setEvents] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(eventId)
 
   // Carica gli eventi se non è specificato un eventId
-  React.useEffect(() => {
+  useEffect(() => {
     if (!eventId) {
       setIsLoading(true)
       fetch("/api/events")
@@ -39,17 +39,36 @@ export default function NewSourcePage() {
         .catch((error) => {
           console.error("Errore durante il caricamento degli eventi:", error)
           setIsLoading(false)
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare gli eventi",
+            variant: "destructive",
+          })
         })
     }
   }, [eventId])
 
+  // Modifichiamo la funzione handleSubmit per utilizzare l'endpoint specifico dell'evento
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
 
     const formData = new FormData(event.currentTarget)
+
+    // Usa l'eventId dall'URL o dal form
+    const sourceEventId = eventId || selectedEventId || (formData.get("eventId") as string)
+
+    if (!sourceEventId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona un evento correlato",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
     const sourceData = {
-      eventId: eventId || (formData.get("eventId") as string),
       title: formData.get("title") as string,
       author: formData.get("author") as string,
       type: formData.get("type") as string,
@@ -57,8 +76,11 @@ export default function NewSourcePage() {
       date: date?.toISOString() || new Date().toISOString(),
     }
 
+    console.log("Invio dati fonte per evento:", sourceEventId, sourceData)
+
     try {
-      const response = await fetch("/api/sources", {
+      // Utilizziamo l'endpoint specifico dell'evento
+      const response = await fetch(`/api/events/${sourceEventId}/sources`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,6 +89,7 @@ export default function NewSourcePage() {
       })
 
       const data = await response.json()
+      console.log("Risposta API:", data)
 
       if (!response.ok) {
         throw new Error(data.message || "Si è verificato un errore durante la creazione della fonte")
@@ -78,7 +101,7 @@ export default function NewSourcePage() {
       })
 
       // Redirect alla pagina dell'evento
-      router.push(`/events/${sourceData.eventId}`)
+      router.push(`/events/${sourceEventId}`)
     } catch (error) {
       console.error("Errore durante la creazione della fonte:", error)
       toast({
@@ -158,7 +181,12 @@ export default function NewSourcePage() {
                       <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
                   ) : (
-                    <Select name="eventId" required>
+                    <Select
+                      name="eventId"
+                      required
+                      value={selectedEventId || undefined}
+                      onValueChange={setSelectedEventId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleziona evento" />
                       </SelectTrigger>

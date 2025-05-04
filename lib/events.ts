@@ -219,13 +219,31 @@ export async function getAllSources(): Promise<Source[]> {
 
 export async function createSource(sourceData: Omit<Source, "id">): Promise<string> {
   try {
+    console.log("Tentativo di creazione fonte con dati:", sourceData)
+
     const conn = await connectToDatabase()
     if (!conn) {
+      console.error("Connessione al database non disponibile")
       throw new Error("Connessione al database non disponibile")
     }
 
+    // Verifica che l'eventId sia una stringa valida
+    if (!sourceData.eventId || typeof sourceData.eventId !== "string") {
+      console.error("eventId non valido:", sourceData.eventId)
+      throw new Error("eventId non valido")
+    }
+
+    // Verifica che l'eventId sia un ObjectId valido
     if (!mongoose.Types.ObjectId.isValid(sourceData.eventId)) {
-      throw new Error("ID evento non valido")
+      console.error("eventId non è un ObjectId valido:", sourceData.eventId)
+      throw new Error("eventId non è un ObjectId valido")
+    }
+
+    // Verifica che l'evento esista
+    const eventExists = await EventModel.exists({ _id: sourceData.eventId })
+    if (!eventExists) {
+      console.error("L'evento specificato non esiste:", sourceData.eventId)
+      throw new Error("L'evento specificato non esiste")
     }
 
     const newSource = new SourceModel({
@@ -234,7 +252,11 @@ export async function createSource(sourceData: Omit<Source, "id">): Promise<stri
       date: new Date(sourceData.date),
     })
 
+    console.log("Modello fonte creato:", newSource)
+
     const savedSource = await newSource.save()
+    console.log("Fonte salvata con successo:", savedSource._id.toString())
+
     return savedSource._id.toString()
   } catch (error) {
     console.error("Errore durante la creazione della fonte:", error)
