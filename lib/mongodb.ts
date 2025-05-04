@@ -30,41 +30,33 @@ async function connectToDatabase() {
     return null
   }
 
-  // Verifica il formato dell'URI
-  try {
-    const url = new URL(MONGODB_URI)
-    if (!url.protocol || !url.hostname || !url.pathname || url.pathname === "/") {
-      console.error("MONGODB_URI non valido: formato non corretto")
-      return null
-    }
-  } catch (error) {
-    console.error("MONGODB_URI non valido:", error)
-    return null
-  }
-
   if (cached.conn) {
     return cached.conn
   }
 
   if (!cached.promise) {
+    // Opzioni ottimizzate per MongoDB Atlas Serverless
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000, // Aumentato a 10 secondi
-      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      // Opzioni specifiche per Serverless
+      autoIndex: false, // Non creare indici automaticamente in produzione
+      maxPoolSize: 10, // Limita il numero di connessioni
+      minPoolSize: 1, // Mantieni almeno una connessione attiva
       connectTimeoutMS: 10000, // Timeout di connessione
       socketTimeoutMS: 45000, // Timeout socket
     }
 
-    console.log("Tentativo di connessione a MongoDB...")
+    console.log("Tentativo di connessione a MongoDB Serverless...")
 
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
       .then((mongoose) => {
-        console.log("MongoDB connesso con successo")
+        console.log("MongoDB Serverless connesso con successo")
         return mongoose
       })
       .catch((error) => {
-        console.error("Errore di connessione a MongoDB:", error)
+        console.error("Errore di connessione a MongoDB Serverless:", error)
 
         // Log dettagliato dell'errore
         if (error.name === "MongoServerSelectionError") {

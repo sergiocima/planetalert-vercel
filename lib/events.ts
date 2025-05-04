@@ -336,6 +336,21 @@ export async function seedDatabase() {
       throw new Error("Connessione al database non disponibile")
     }
 
+    console.log("Inizializzazione del database...")
+
+    // Verifica se ci sono già dati nel database
+    const eventsCount = await EventModel.countDocuments()
+    const sourcesCount = await SourceModel.countDocuments()
+
+    if (eventsCount > 0 || sourcesCount > 0) {
+      console.log(`Database già inizializzato (${eventsCount} eventi, ${sourcesCount} fonti)`)
+      return {
+        success: true,
+        message: "Database già inizializzato",
+        stats: { events: eventsCount, sources: sourcesCount },
+      }
+    }
+
     // Pulisci le collezioni esistenti
     await EventModel.deleteMany({})
     await SourceModel.deleteMany({})
@@ -400,7 +415,22 @@ export async function seedDatabase() {
     })
     await source2.save()
 
+    const source3 = new SourceModel({
+      eventId: event2._id,
+      title: "Relazione scientifica sul terremoto di Amatrice",
+      author: "INGV - Istituto Nazionale di Geofisica e Vulcanologia",
+      type: "article",
+      url: "https://example.com/ingv-report",
+      date: new Date("2016-09-15T00:00:00.000Z"),
+    })
+    await source3.save()
+
     console.log("Database inizializzato con successo")
+    return {
+      success: true,
+      message: "Database inizializzato con successo",
+      stats: { events: 2, sources: 3 },
+    }
   } catch (error) {
     console.error("Errore durante l'inizializzazione del database:", error)
     throw error
