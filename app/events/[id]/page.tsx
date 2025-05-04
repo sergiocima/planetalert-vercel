@@ -1,4 +1,4 @@
-import { getEventById, getEvents, getRelatedSources } from "@/lib/events"
+import { getEventById, getRelatedSources } from "@/lib/events"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,32 +10,14 @@ import { notFound } from "next/navigation"
 import EventMap from "@/components/event-map"
 import SourcesList from "@/components/sources-list"
 
-// Aggiungiamo questa funzione per generare i parametri statici
-export async function generateStaticParams() {
-  try {
-    // Durante il build, restituisci un array vuoto per evitare errori
-    if (process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === "production") {
-      return []
-    }
-
-    const events = await getEvents()
-    return events.map((event) => ({
-      id: event.id,
-    }))
-  } catch (error) {
-    console.error("Errore durante la generazione dei parametri statici:", error)
-    return [] // In caso di errore, restituisci un array vuoto
-  }
-}
-
-export default async function EventPage({ params }: { params: { id: string } }) {
-  const event = await getEventById(params.id)
+export default function EventPage({ params }: { params: { id: string } }) {
+  const event = getEventById(params.id)
 
   if (!event) {
     notFound()
   }
 
-  const sources = await getRelatedSources(params.id)
+  const sources = getRelatedSources(params.id)
 
   return (
     <main className="container mx-auto p-4">

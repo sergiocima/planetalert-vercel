@@ -1,12 +1,8 @@
-import connectToDatabase from "./mongodb"
-import EventModel, { type IEvent } from "../models/Event"
-import SourceModel, { type ISource } from "../models/Source"
-import mongoose from "mongoose"
 import type { Event } from "@/types/event"
 import type { Source } from "@/types/source"
 
-// Dati di fallback per quando il database non è disponibile
-const fallbackEvents: Event[] = [
+// Dati di esempio per la demo
+const eventsData: Event[] = [
   {
     id: "1",
     title: "Alluvione in Emilia-Romagna",
@@ -16,9 +12,9 @@ const fallbackEvents: Event[] = [
     longitude: 11.3426,
     date: "2023-05-16T00:00:00.000Z",
     description:
-      "Grave alluvione che ha colpito diverse province dell'Emilia-Romagna, causando esondazioni di fiumi, frane e allagamenti.",
+      "Grave alluvione che ha colpito diverse province dell'Emilia-Romagna, causando esondazioni di fiumi, frane e allagamenti. Le piogge intense hanno provocato l'evacuazione di migliaia di persone e danni significativi alle infrastrutture e alle abitazioni.",
     scientificAnalysis:
-      "L'evento è stato causato da precipitazioni eccezionali, con accumuli che hanno superato i 200mm in 36 ore.",
+      "L'evento è stato causato da precipitazioni eccezionali, con accumuli che hanno superato i 200mm in 36 ore. Secondo l'analisi dell'ISPRA, il fenomeno è stato amplificato da condizioni di saturazione del suolo dovute a piogge precedenti e dalla morfologia del territorio.\n\nLe analisi climatologiche indicano che eventi di questa intensità stanno diventando più frequenti a causa dei cambiamenti climatici, con un aumento stimato del 20% nella frequenza di eventi estremi in questa regione negli ultimi 30 anni.",
     severity: 5,
     status: "Concluso",
     affectedArea: 23000,
@@ -33,18 +29,55 @@ const fallbackEvents: Event[] = [
     latitude: 42.6271,
     longitude: 13.2888,
     date: "2016-08-24T01:36:00.000Z",
-    description: "Forte terremoto di magnitudo 6.0 che ha colpito l'Italia centrale, con epicentro vicino ad Amatrice.",
+    description:
+      "Forte terremoto di magnitudo 6.0 che ha colpito l'Italia centrale, con epicentro vicino ad Amatrice. Il sisma ha causato gravi danni in numerosi comuni tra Lazio, Umbria, Marche e Abruzzo.",
     scientificAnalysis:
-      "Il terremoto è stato generato da una faglia normale con direzione NW-SE, tipica dell'Appennino centrale.",
+      "Il terremoto è stato generato da una faglia normale con direzione NW-SE, tipica dell'Appennino centrale. L'evento si inserisce nella sequenza sismica che caratterizza questa zona, considerata ad alto rischio sismico.\n\nSecondo l'INGV, la profondità ipocentrale è stata stimata a circa 8 km, relativamente superficiale, il che spiega i danni significativi nonostante la magnitudo moderata. Le analisi geologiche hanno evidenziato un'accelerazione del suolo particolarmente elevata, amplificata dalle caratteristiche geomorfologiche locali.",
     severity: 5,
     status: "Concluso",
     affectedArea: 8000,
     casualties: 299,
     economicDamage: "23,5 miliardi €",
   },
+  {
+    id: "3",
+    title: "Siccità in Sicilia",
+    type: "siccità",
+    location: "Sicilia, Italia",
+    latitude: 37.599,
+    longitude: 14.0154,
+    date: "2023-06-01T00:00:00.000Z",
+    description:
+      "Grave crisi idrica che ha colpito la Sicilia, con particolare intensità nelle province di Agrigento, Caltanissetta e Palermo. La prolungata assenza di precipitazioni ha causato il prosciugamento di invasi e la riduzione delle riserve idriche.",
+    scientificAnalysis:
+      "L'analisi dei dati pluviometrici mostra un deficit di precipitazioni del 70% rispetto alla media stagionale. Secondo il CNR, questo evento si inserisce in un trend di aridificazione del Mediterraneo, con un aumento della frequenza e dell'intensità dei periodi siccitosi negli ultimi decenni.\n\nI modelli climatici prevedono un ulteriore aggravamento di queste condizioni nei prossimi anni, con impatti significativi sull'agricoltura e sulla disponibilità di acqua potabile. Le temperature medie estive hanno superato di 2,5°C i valori normali, accelerando l'evaporazione e aggravando la situazione.",
+    severity: 4,
+    status: "In corso",
+    affectedArea: 25000,
+    casualties: 0,
+    economicDamage: "1,2 miliardi € (stima preliminare)",
+  },
+  {
+    id: "4",
+    title: "Incendio boschivo nel Parco del Cilento",
+    type: "incendio",
+    location: "Parco Nazionale del Cilento, Campania, Italia",
+    latitude: 40.29,
+    longitude: 15.36,
+    date: "2023-07-25T00:00:00.000Z",
+    description:
+      "Vasto incendio boschivo che ha interessato diverse aree del Parco Nazionale del Cilento, Vallo di Diano e Alburni. Le fiamme, alimentate da venti forti e temperature elevate, hanno distrutto centinaia di ettari di vegetazione.",
+    scientificAnalysis:
+      "L'analisi delle condizioni meteorologiche ha evidenziato una combinazione di fattori predisponenti: temperature superiori a 35°C per oltre 10 giorni consecutivi, umidità relativa inferiore al 20% e venti con raffiche fino a 50 km/h.\n\nSecondo i dati del Corpo Forestale, l'incendio è stato di origine dolosa, ma le condizioni ambientali ne hanno favorito la rapida propagazione. Gli studi ecologici preliminari indicano che la rigenerazione della vegetazione richiederà almeno 15-20 anni, con gravi conseguenze sulla biodiversità locale e sull'erosione del suolo.",
+    severity: 3,
+    status: "Concluso",
+    affectedArea: 850,
+    casualties: 0,
+    economicDamage: "4,5 milioni €",
+  },
 ]
 
-const fallbackSources: Source[] = [
+const sourcesData: Source[] = [
   {
     id: "1",
     eventId: "1",
@@ -63,376 +96,63 @@ const fallbackSources: Source[] = [
     url: "https://example.com/unibo-report",
     date: "2023-07-05T00:00:00.000Z",
   },
+  {
+    id: "3",
+    eventId: "2",
+    title: "Relazione scientifica sul terremoto di Amatrice",
+    author: "INGV - Istituto Nazionale di Geofisica e Vulcanologia",
+    type: "article",
+    url: "https://example.com/ingv-report",
+    date: "2016-09-15T00:00:00.000Z",
+  },
+  {
+    id: "4",
+    eventId: "2",
+    title: "Mappa delle accelerazioni sismiche registrate",
+    author: "Protezione Civile Italiana",
+    type: "link",
+    url: "https://example.com/protezione-civile-map",
+    date: "2016-08-30T00:00:00.000Z",
+  },
+  {
+    id: "5",
+    eventId: "3",
+    title: "Bollettino siccità Sicilia 2023",
+    author: "CNR - Consiglio Nazionale delle Ricerche",
+    type: "article",
+    url: "https://example.com/cnr-report",
+    date: "2023-07-20T00:00:00.000Z",
+  },
+  {
+    id: "6",
+    eventId: "4",
+    title: "Rapporto incendi boschivi estate 2023",
+    author: "Corpo Forestale dello Stato",
+    type: "article",
+    url: "https://example.com/forestale-report",
+    date: "2023-09-10T00:00:00.000Z",
+  },
 ]
 
-// Funzione per convertire il documento MongoDB in un oggetto Event
-function mapEventDocument(doc: IEvent): Event {
-  return {
-    id: doc._id.toString(),
-    title: doc.title,
-    type: doc.type,
-    location: doc.location,
-    latitude: doc.latitude,
-    longitude: doc.longitude,
-    date: doc.date.toISOString(),
-    description: doc.description,
-    scientificAnalysis: doc.scientificAnalysis,
-    severity: doc.severity,
-    status: doc.status,
-    affectedArea: doc.affectedArea,
-    casualties: doc.casualties,
-    economicDamage: doc.economicDamage,
-  }
-}
-
-// Funzione per convertire il documento MongoDB in un oggetto Source
-function mapSourceDocument(doc: ISource): Source {
-  return {
-    id: doc._id.toString(),
-    eventId: doc.eventId.toString(),
-    title: doc.title,
-    author: doc.author,
-    type: doc.type,
-    url: doc.url,
-    date: doc.date.toISOString(),
-  }
-}
-
 // Funzioni per interagire con i dati
-// Modifichiamo la funzione getEvents per gestire meglio gli errori durante il build
-export async function getEvents(): Promise<Event[]> {
-  // Durante il build in produzione, restituisci i dati di fallback
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.VERCEL_ENV === "production" &&
-    !process.env.NEXT_PUBLIC_RUNTIME
-  ) {
-    console.log("Build in produzione, utilizzo dati di fallback")
-    return fallbackEvents
-  }
-
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) {
-      console.warn("Connessione al database non disponibile, utilizzo dati di fallback")
-      return fallbackEvents
-    }
-
-    const events = await EventModel.find().sort({ date: -1 })
-    return events.map(mapEventDocument)
-  } catch (error) {
-    console.error("Errore durante il recupero degli eventi:", error)
-    return fallbackEvents
-  }
+export function getEvents(): Event[] {
+  // In un'applicazione reale, qui ci sarebbe una chiamata a un database
+  return eventsData
 }
 
-export async function getEventById(id: string): Promise<Event | null> {
-  // Durante il build in produzione, restituisci i dati di fallback
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.VERCEL_ENV === "production" &&
-    !process.env.NEXT_PUBLIC_RUNTIME
-  ) {
-    console.log("Build in produzione, utilizzo dati di fallback")
-    return fallbackEvents.find((e) => e.id === id) || null
-  }
-
-  try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null
-    }
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      console.warn("Connessione al database non disponibile, utilizzo dati di fallback")
-      return fallbackEvents.find((e) => e.id === id) || null
-    }
-
-    const event = await EventModel.findById(id)
-
-    if (!event) {
-      return null
-    }
-
-    return mapEventDocument(event)
-  } catch (error) {
-    console.error(`Errore durante il recupero dell'evento ${id}:`, error)
-    return fallbackEvents.find((e) => e.id === id) || null
-  }
+export function getEventById(id: string): Event | undefined {
+  // In un'applicazione reale, qui ci sarebbe una query al database
+  return eventsData.find((event) => event.id === id)
 }
 
-export async function getRelatedSources(eventId: string): Promise<Source[]> {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-      return []
-    }
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      console.warn("Connessione al database non disponibile, utilizzo dati di fallback")
-      return fallbackSources.filter((s) => s.eventId === eventId)
-    }
-
-    const sources = await SourceModel.find({ eventId }).sort({ date: -1 })
-    return sources.map(mapSourceDocument)
-  } catch (error) {
-    console.error(`Errore durante il recupero delle fonti per l'evento ${eventId}:`, error)
-    return fallbackSources.filter((s) => s.eventId === eventId)
-  }
+export function getRelatedSources(eventId: string): Source[] {
+  // In un'applicazione reale, qui ci sarebbe una query al database
+  return sourcesData.filter((source) => source.eventId === eventId)
 }
 
-export async function createEvent(eventData: Omit<Event, "id">): Promise<string> {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) {
-      throw new Error("Connessione al database non disponibile")
-    }
+export function createEvent(eventData: Omit<Event, "id">): string {
+  // In un'applicazione reale, qui ci sarebbe un'inserimento nel database
+  const newId = (eventsData.length + 1).toString()
 
-    const newEvent = new EventModel({
-      ...eventData,
-      date: new Date(eventData.date),
-    })
-
-    const savedEvent = await newEvent.save()
-    return savedEvent._id.toString()
-  } catch (error) {
-    console.error("Errore durante la creazione dell'evento:", error)
-    throw error
-  }
-}
-
-export async function getAllSources(): Promise<Source[]> {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) {
-      console.warn("Connessione al database non disponibile, utilizzo dati di fallback")
-      return fallbackSources
-    }
-
-    const sources = await SourceModel.find().sort({ date: -1 })
-    return sources.map(mapSourceDocument)
-  } catch (error) {
-    console.error("Errore durante il recupero delle fonti:", error)
-    return fallbackSources
-  }
-}
-
-export async function createSource(sourceData: Omit<Source, "id">): Promise<string> {
-  try {
-    console.log("Tentativo di creazione fonte con dati:", sourceData)
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      console.error("Connessione al database non disponibile")
-      throw new Error("Connessione al database non disponibile")
-    }
-
-    // Verifica che l'eventId sia una stringa valida
-    if (!sourceData.eventId || typeof sourceData.eventId !== "string") {
-      console.error("eventId non valido:", sourceData.eventId)
-      throw new Error("eventId non valido")
-    }
-
-    // Verifica che l'eventId sia un ObjectId valido
-    if (!mongoose.Types.ObjectId.isValid(sourceData.eventId)) {
-      console.error("eventId non è un ObjectId valido:", sourceData.eventId)
-      throw new Error("eventId non è un ObjectId valido")
-    }
-
-    // Verifica che l'evento esista
-    const eventExists = await EventModel.exists({ _id: sourceData.eventId })
-    if (!eventExists) {
-      console.error("L'evento specificato non esiste:", sourceData.eventId)
-      throw new Error("L'evento specificato non esiste")
-    }
-
-    const newSource = new SourceModel({
-      ...sourceData,
-      eventId: new mongoose.Types.ObjectId(sourceData.eventId),
-      date: new Date(sourceData.date),
-    })
-
-    console.log("Modello fonte creato:", newSource)
-
-    const savedSource = await newSource.save()
-    console.log("Fonte salvata con successo:", savedSource._id.toString())
-
-    return savedSource._id.toString()
-  } catch (error) {
-    console.error("Errore durante la creazione della fonte:", error)
-    throw error
-  }
-}
-
-export async function updateEvent(id: string, eventData: Omit<Event, "id">): Promise<boolean> {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return false
-    }
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      throw new Error("Connessione al database non disponibile")
-    }
-
-    const updatedEvent = await EventModel.findByIdAndUpdate(
-      id,
-      {
-        ...eventData,
-        date: new Date(eventData.date),
-      },
-      { new: true }, // Restituisce il documento modificato
-    )
-
-    return !!updatedEvent // Restituisce true se l'evento è stato trovato e aggiornato
-  } catch (error) {
-    console.error(`Errore durante l'aggiornamento dell'evento ${id}:`, error)
-    return false
-  }
-}
-
-export async function deleteEvent(id: string): Promise<boolean> {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return false
-    }
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      throw new Error("Connessione al database non disponibile")
-    }
-
-    const deletedEvent = await EventModel.findByIdAndDelete(id)
-    return !!deletedEvent // Restituisce true se l'evento è stato trovato ed eliminato
-  } catch (error) {
-    console.error(`Errore durante l'eliminazione dell'evento ${id}:`, error)
-    return false
-  }
-}
-
-export async function deleteSource(id: string): Promise<boolean> {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return false
-    }
-
-    const conn = await connectToDatabase()
-    if (!conn) {
-      throw new Error("Connessione al database non disponibile")
-    }
-
-    const deletedSource = await SourceModel.findByIdAndDelete(id)
-    return !!deletedSource // Restituisce true se la fonte è stata trovata ed eliminata
-  } catch (error) {
-    console.error(`Errore durante l'eliminazione della fonte ${id}:`, error)
-    return false
-  }
-}
-
-export async function seedDatabase() {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) {
-      throw new Error("Connessione al database non disponibile")
-    }
-
-    console.log("Inizializzazione del database...")
-
-    // Verifica se ci sono già dati nel database
-    const eventsCount = await EventModel.countDocuments()
-    const sourcesCount = await SourceModel.countDocuments()
-
-    if (eventsCount > 0 || sourcesCount > 0) {
-      console.log(`Database già inizializzato (${eventsCount} eventi, ${sourcesCount} fonti)`)
-      return {
-        success: true,
-        message: "Database già inizializzato",
-        stats: { events: eventsCount, sources: sourcesCount },
-      }
-    }
-
-    // Pulisci le collezioni esistenti
-    await EventModel.deleteMany({})
-    await SourceModel.deleteMany({})
-
-    // Crea eventi di esempio
-    const event1 = new EventModel({
-      title: "Alluvione in Emilia-Romagna",
-      type: "alluvione",
-      location: "Emilia-Romagna, Italia",
-      latitude: 44.4949,
-      longitude: 11.3426,
-      date: new Date("2023-05-16T00:00:00.000Z"),
-      description:
-        "Grave alluvione che ha colpito diverse province dell'Emilia-Romagna, causando esondazioni di fiumi, frane e allagamenti.",
-      scientificAnalysis:
-        "L'evento è stato causato da precipitazioni eccezionali, con accumuli che hanno superato i 200mm in 36 ore.",
-      severity: 5,
-      status: "Concluso",
-      affectedArea: 23000,
-      casualties: 17,
-      economicDamage: "8,5 miliardi €",
-    })
-    await event1.save()
-
-    const event2 = new EventModel({
-      title: "Terremoto di Amatrice",
-      type: "terremoto",
-      location: "Amatrice, Lazio, Italia",
-      latitude: 42.6271,
-      longitude: 13.2888,
-      date: new Date("2016-08-24T01:36:00.000Z"),
-      description:
-        "Forte terremoto di magnitudo 6.0 che ha colpito l'Italia centrale, con epicentro vicino ad Amatrice.",
-      scientificAnalysis:
-        "Il terremoto è stato generato da una faglia normale con direzione NW-SE, tipica dell'Appennino centrale.",
-      severity: 5,
-      status: "Concluso",
-      affectedArea: 8000,
-      casualties: 299,
-      economicDamage: "23,5 miliardi €",
-    })
-    await event2.save()
-
-    // Crea fonti di esempio
-    const source1 = new SourceModel({
-      eventId: event1._id,
-      title: "Rapporto tecnico sull'alluvione in Emilia-Romagna",
-      author: "ISPRA - Istituto Superiore per la Protezione e la Ricerca Ambientale",
-      type: "article",
-      url: "https://example.com/ispra-report",
-      date: new Date("2023-06-10T00:00:00.000Z"),
-    })
-    await source1.save()
-
-    const source2 = new SourceModel({
-      eventId: event1._id,
-      title: "Analisi idrologica degli eventi di maggio 2023",
-      author: "Università di Bologna - Dipartimento di Ingegneria Civile",
-      type: "article",
-      url: "https://example.com/unibo-report",
-      date: new Date("2023-07-05T00:00:00.000Z"),
-    })
-    await source2.save()
-
-    const source3 = new SourceModel({
-      eventId: event2._id,
-      title: "Relazione scientifica sul terremoto di Amatrice",
-      author: "INGV - Istituto Nazionale di Geofisica e Vulcanologia",
-      type: "article",
-      url: "https://example.com/ingv-report",
-      date: new Date("2016-09-15T00:00:00.000Z"),
-    })
-    await source3.save()
-
-    console.log("Database inizializzato con successo")
-    return {
-      success: true,
-      message: "Database inizializzato con successo",
-      stats: { events: 2, sources: 3 },
-    }
-  } catch (error) {
-    console.error("Errore durante l'inizializzazione del database:", error)
-    throw error
-  }
+  return newId
 }
