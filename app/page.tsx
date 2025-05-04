@@ -3,8 +3,8 @@ import EventsList from "@/components/events-list"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getEvents } from "@/lib/events"
 
-export default function Home() {
-  const events = getEvents()
+export default async function Home() {
+  const events = await getEvents()
 
   return (
     <main className="container mx-auto p-4">

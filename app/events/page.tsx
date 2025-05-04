@@ -4,8 +4,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 
-export default function EventsPage() {
-  const events = getEvents()
+export default async function EventsPage() {
+  const events = await getEvents()
 
   return (
     <main className="container mx-auto p-4">

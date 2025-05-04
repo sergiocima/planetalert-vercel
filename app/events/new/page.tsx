@@ -15,15 +15,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
-import { createEvent } from "@/lib/events"
 import Link from "next/link"
+import { toast } from "@/components/ui/use-toast"
 
 export default function NewEventPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
 
-  // Modifichiamo la funzione handleSubmit per non utilizzare await
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
@@ -42,17 +41,37 @@ export default function NewEventPage() {
       status: formData.get("status") as string,
       affectedArea: Number.parseFloat(formData.get("affectedArea") as string),
       casualties: formData.get("casualties") ? Number.parseInt(formData.get("casualties") as string) : undefined,
-      economicDamage: formData.get("economicDamage") as string,
+      economicDamage: (formData.get("economicDamage") as string) || undefined,
     }
 
     try {
-      const newEventId = createEvent(eventData)
-      // Simuliamo un ritardo prima del redirect
-      setTimeout(() => {
-        router.push(`/events/${newEventId}`)
-      }, 1000)
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Si è verificato un errore durante la creazione dell'evento")
+      }
+
+      toast({
+        title: "Evento creato",
+        description: "L'evento è stato creato con successo",
+      })
+
+      router.push(`/events/${data.eventId}`)
     } catch (error) {
       console.error("Errore durante la creazione dell'evento:", error)
+      toast({
+        title: "Errore",
+        description: String(error),
+        variant: "destructive",
+      })
       setIsSubmitting(false)
     }
   }

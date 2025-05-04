@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
+import { toast } from "@/components/ui/use-toast"
 
 export default function NewSourcePage() {
   const router = useRouter()
@@ -22,19 +23,70 @@ export default function NewSourcePage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [date, setDate] = useState<Date | undefined>(new Date())
+  const [events, setEvents] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Carica gli eventi se non è specificato un eventId
+  React.useEffect(() => {
+    if (!eventId) {
+      setIsLoading(true)
+      fetch("/api/events")
+        .then((res) => res.json())
+        .then((data) => {
+          setEvents(data)
+          setIsLoading(false)
+        })
+        .catch((error) => {
+          console.error("Errore durante il caricamento degli eventi:", error)
+          setIsLoading(false)
+        })
+    }
+  }, [eventId])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
 
-    // Simuliamo un salvataggio
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const formData = new FormData(event.currentTarget)
+    const sourceData = {
+      eventId: eventId || (formData.get("eventId") as string),
+      title: formData.get("title") as string,
+      author: formData.get("author") as string,
+      type: formData.get("type") as string,
+      url: (formData.get("url") as string) || undefined,
+      date: date?.toISOString() || new Date().toISOString(),
+    }
 
-    // Redirect alla pagina dell'evento
-    if (eventId) {
-      router.push(`/events/${eventId}`)
-    } else {
-      router.push("/sources")
+    try {
+      const response = await fetch("/api/sources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sourceData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || "Si è verificato un errore durante la creazione della fonte")
+      }
+
+      toast({
+        title: "Fonte creata",
+        description: "La fonte è stata creata con successo",
+      })
+
+      // Redirect alla pagina dell'evento
+      router.push(`/events/${sourceData.eventId}`)
+    } catch (error) {
+      console.error("Errore durante la creazione della fonte:", error)
+      toast({
+        title: "Errore",
+        description: String(error),
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
     }
   }
 
@@ -101,17 +153,24 @@ export default function NewSourcePage() {
               {!eventId && (
                 <div className="space-y-2">
                   <Label htmlFor="eventId">Evento correlato</Label>
-                  <Select name="eventId" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona evento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Alluvione in Emilia-Romagna</SelectItem>
-                      <SelectItem value="2">Terremoto di Amatrice</SelectItem>
-                      <SelectItem value="3">Siccità in Sicilia</SelectItem>
-                      <SelectItem value="4">Incendio boschivo nel Parco del Cilento</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <Select name="eventId" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona evento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id}>
+                            {event.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </div>

@@ -11,21 +11,21 @@ import EventMap from "@/components/event-map"
 import SourcesList from "@/components/sources-list"
 
 // Aggiungiamo questa funzione per generare i parametri statici
-export function generateStaticParams() {
-  const events = getEvents()
+export async function generateStaticParams() {
+  const events = await getEvents()
   return events.map((event) => ({
     id: event.id,
   }))
 }
 
-export default function EventPage({ params }: { params: { id: string } }) {
-  const event = getEventById(params.id)
+export default async function EventPage({ params }: { params: { id: string } }) {
+  const event = await getEventById(params.id)
 
   if (!event) {
     notFound()
   }
 
-  const sources = getRelatedSources(params.id)
+  const sources = await getRelatedSources(params.id)
 
   return (
     <main className="container mx-auto p-4">
