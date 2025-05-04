@@ -1,15 +1,35 @@
 import mongoose from "mongoose"
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/natural-events"
+const MONGODB_URI = process.env.MONGODB_URI
 
-// Variabile per memorizzare la connessione
-let cached = global.mongoose
+interface MongooseCache {
+  conn: typeof mongoose | null
+  promise: Promise<typeof mongoose> | null
+}
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
+const cached: MongooseCache = (global as any).mongoose || { conn: null, promise: null }
+
+if (!(global as any).mongoose) {
+  ;(global as any).mongoose = cached
 }
 
 async function connectToDatabase() {
+  // Se siamo in fase di build e non è richiesto esplicitamente, non connettersi al database
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.VERCEL_ENV === "production" &&
+    !process.env.NEXT_PUBLIC_RUNTIME
+  ) {
+    console.log("Build in produzione, salto la connessione al database")
+    return null
+  }
+
+  // Se non c'è un URI MongoDB configurato, restituisci null
+  if (!MONGODB_URI) {
+    console.warn("MONGODB_URI non configurato. Funzionalità database disabilitate.")
+    return null
+  }
+
   if (cached.conn) {
     return cached.conn
   }
@@ -30,37 +50,19 @@ async function connectToDatabase() {
       .catch((error) => {
         console.error("Errore di connessione a MongoDB:", error)
         cached.promise = null
-        throw error
+        return null // Restituisci null invece di lanciare un errore
       })
   }
 
   try {
     cached.conn = await cached.promise
   } catch (e) {
+    console.error("Errore durante l'attesa della connessione:", e)
     cached.promise = null
-    throw e
+    return null // Restituisci null invece di lanciare un errore
   }
 
   return cached.conn
 }
-
-// Gestione degli eventi di connessione
-mongoose.connection.on("connected", () => {
-  console.log("MongoDB connesso")
-})
-
-mongoose.connection.on("error", (err) => {
-  console.error("Errore MongoDB:", err)
-})
-
-mongoose.connection.on("disconnected", () => {
-  console.log("MongoDB disconnesso")
-})
-
-// Gestione della chiusura dell'applicazione
-process.on("SIGINT", async () => {
-  await mongoose.connection.close()
-  process.exit(0)
-})
 
 export default connectToDatabase

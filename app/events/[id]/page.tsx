@@ -12,10 +12,20 @@ import SourcesList from "@/components/sources-list"
 
 // Aggiungiamo questa funzione per generare i parametri statici
 export async function generateStaticParams() {
-  const events = await getEvents()
-  return events.map((event) => ({
-    id: event.id,
-  }))
+  try {
+    // Durante il build, restituisci un array vuoto per evitare errori
+    if (process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === "production") {
+      return []
+    }
+
+    const events = await getEvents()
+    return events.map((event) => ({
+      id: event.id,
+    }))
+  } catch (error) {
+    console.error("Errore durante la generazione dei parametri statici:", error)
+    return [] // In caso di errore, restituisci un array vuoto
+  }
 }
 
 export default async function EventPage({ params }: { params: { id: string } }) {
