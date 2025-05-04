@@ -30,6 +30,18 @@ async function connectToDatabase() {
     return null
   }
 
+  // Verifica il formato dell'URI
+  try {
+    const url = new URL(MONGODB_URI)
+    if (!url.protocol || !url.hostname || !url.pathname || url.pathname === "/") {
+      console.error("MONGODB_URI non valido: formato non corretto")
+      return null
+    }
+  } catch (error) {
+    console.error("MONGODB_URI non valido:", error)
+    return null
+  }
+
   if (cached.conn) {
     return cached.conn
   }
@@ -37,9 +49,13 @@ async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // Timeout dopo 5 secondi
-      maxPoolSize: 10, // Mantieni fino a 10 connessioni socket
+      serverSelectionTimeoutMS: 10000, // Aumentato a 10 secondi
+      maxPoolSize: 10,
+      connectTimeoutMS: 10000, // Timeout di connessione
+      socketTimeoutMS: 45000, // Timeout socket
     }
+
+    console.log("Tentativo di connessione a MongoDB...")
 
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
@@ -49,8 +65,17 @@ async function connectToDatabase() {
       })
       .catch((error) => {
         console.error("Errore di connessione a MongoDB:", error)
+
+        // Log dettagliato dell'errore
+        if (error.name === "MongoServerSelectionError") {
+          console.error("Impossibile selezionare un server MongoDB. Verifica:")
+          console.error("1. Che l'indirizzo IP sia nella whitelist")
+          console.error("2. Che le credenziali siano corrette")
+          console.error("3. Che il cluster sia attivo e raggiungibile")
+        }
+
         cached.promise = null
-        return null // Restituisci null invece di lanciare un errore
+        return null
       })
   }
 
@@ -59,7 +84,7 @@ async function connectToDatabase() {
   } catch (e) {
     console.error("Errore durante l'attesa della connessione:", e)
     cached.promise = null
-    return null // Restituisci null invece di lanciare un errore
+    return null
   }
 
   return cached.conn
