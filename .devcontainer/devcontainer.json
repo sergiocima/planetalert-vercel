@@ -1,16 +1,18 @@
 {
   "name": "PlanetAlert Development",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18-bullseye",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers-contrib/features/pnpm:2": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
     "ghcr.io/devcontainers/features/postgresql:1": {
       "version": "15",
       "installTools": true
     }
   },
   "forwardPorts": [3000, 5432],
-  "postCreateCommand": "pnpm install",
+  "postCreateCommand": "npm install -g pnpm && pnpm install",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -23,5 +25,8 @@
       ]
     }
   },
-  "remoteUser": "node"
+  "remoteUser": "node",
+  "hostRequirements": {
+    "memory": "8gb"
+  }
 } 
