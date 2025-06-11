@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, LinkIcon, Download, ExternalLink, Plus } from "lucide-react"
 import Link from "next/link"
 import type { Source } from "@/types/source"
+import { getEvents, getRelatedSources } from "@/lib/events"
 
 // Modifichiamo la funzione per non essere asincrona
 function getAllSources(): Source[] {
@@ -69,89 +70,54 @@ function getAllSources(): Source[] {
 }
 
 export default function SourcesPage() {
-  const sources = getAllSources()
+  const events = getEvents()
+  const allSources = events.flatMap((event) => {
+    const sources = getRelatedSources(event.id)
+    return sources.map((source) => ({
+      ...source,
+      event: event,
+    }))
+  })
+
+  // Ordina le fonti per data, dalla più recente
+  const sortedSources = allSources.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
 
   return (
     <main className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Fonti Scientifiche</h1>
-        <Link href="/sources/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuova Fonte
-          </Button>
-        </Link>
-      </div>
-
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Input placeholder="Cerca fonti..." />
-            </div>
-            <div className="w-full md:w-64">
-              <Select defaultValue="all">
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtra per tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti i tipi</SelectItem>
-                  <SelectItem value="article">Articoli scientifici</SelectItem>
-                  <SelectItem value="link">Link / Siti web</SelectItem>
-                  <SelectItem value="file">File / Documenti</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl">Fonti e documenti</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            {sortedSources.map((source) => (
+              <div key={source.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-medium">{source.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {source.author} - {new Date(source.date).toLocaleDateString("it-IT")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Evento: {source.event.title}
+                    </p>
+                  </div>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Visualizza →
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
-
-      <div className="grid gap-4">
-        {sources.map((source) => (
-          <Card key={source.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-muted rounded-md p-3">
-                  {source.type === "article" ? (
-                    <FileText className="h-6 w-6" />
-                  ) : source.type === "link" ? (
-                    <LinkIcon className="h-6 w-6" />
-                  ) : (
-                    <Download className="h-6 w-6" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-lg">{source.title}</h3>
-                  <p className="text-sm text-muted-foreground">{source.author}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="outline">
-                      {source.type === "article"
-                        ? "Articolo scientifico"
-                        : source.type === "link"
-                          ? "Link / Sito web"
-                          : "File / Documento"}
-                    </Badge>
-                    <Badge variant="outline">{new Date(source.date).toLocaleDateString("it-IT")}</Badge>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  {source.url && (
-                    <Link href={source.url} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="outline">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Apri
-                      </Button>
-                    </Link>
-                  )}
-                  <Link href={`/events/${source.eventId}`}>
-                    <Button size="sm">Evento correlato</Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </main>
   )
 }
