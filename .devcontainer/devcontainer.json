@@ -3,9 +3,6 @@
   "image": "mcr.microsoft.com/devcontainers/javascript-node:18-bullseye",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
-    },
     "ghcr.io/devcontainers/features/postgresql:1": {
       "version": "15",
       "installTools": true
@@ -25,7 +22,6 @@
       ]
     }
   },
-  "remoteUser": "node",
   "hostRequirements": {
     "memory": "8gb"
   }
