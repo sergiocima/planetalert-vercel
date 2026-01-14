@@ -1,30 +1,107 @@
-# New Project
+# PlanetAlert 🌍
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+Piattaforma di monitoraggio e documentazione degli eventi naturali in Italia.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/magnetes-projects/v0-new-project-t92b6hyys9m)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/t92b6HYYS9M)
+## 🚀 Caratteristiche
 
-## Overview
+- 🗺️ Mappa interattiva degli eventi naturali
+- 📊 Dashboard con statistiche e analisi
+- 📱 Interfaccia responsive e moderna
+- 🌓 Supporto tema chiaro/scuro
+- 🔍 Ricerca e filtri avanzati
+- 📄 Documentazione scientifica dettagliata
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## 🛠️ Tecnologie
 
-## Deployment
+- [Next.js 15](https://nextjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Radix UI](https://www.radix-ui.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Drizzle ORM](https://orm.drizzle.team/)
+- [Leaflet](https://leafletjs.com/)
 
-Your project is live at:
+## 🏗️ Sviluppo
 
-**[https://vercel.com/magnetes-projects/v0-new-project-t92b6hyys9m](https://vercel.com/magnetes-projects/v0-new-project-t92b6hyys9m)**
+1. **Clona il repository in Codespaces**:
+   - Clicca sul pulsante verde "Code"
+   - Seleziona la tab "Codespaces"
+   - Clicca "Create codespace on main"
 
-## Build your app
+2. **Setup dell'ambiente**:
+   ```bash
+   # Rendi eseguibile lo script di setup
+   chmod +x .devcontainer/setup.sh
+   
+   # Esegui lo script di setup
+   .devcontainer/setup.sh
+   ```
 
-Continue building your app on:
+3. **Avvia l'applicazione**:
+   ```bash
+   pnpm dev
+   ```
 
-**[https://v0.dev/chat/projects/t92b6HYYS9M](https://v0.dev/chat/projects/t92b6HYYS9M)**
+4. **Gestione del database**:
+   ```bash
+   # Genera le migrazioni
+   pnpm db:generate
+   
+   # Applica le migrazioni
+   pnpm db:push
+   
+   # Apri Drizzle Studio
+   pnpm db:studio
+   ```
 
-## How It Works
+## 📝 Struttura del Database
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+```mermaid
+erDiagram
+    events {
+        serial id PK
+        text title
+        text type
+        text location
+        decimal latitude
+        decimal longitude
+        timestamp date
+        text description
+        text scientific_analysis
+        integer severity
+        text status
+        decimal affected_area
+        integer casualties
+        text economic_damage
+    }
+    sources {
+        serial id PK
+        integer event_id FK
+        text title
+        text author
+        text type
+        text url
+        timestamp date
+    }
+    events ||--o{ sources : has
+```
+
+## 🤝 Contribuire
+
+Le contribuzioni sono benvenute! Per favore:
+
+1. 🍴 Fai un fork del repository
+2. 🌿 Crea un branch per le tue modifiche (`git checkout -b feature/AmazingFeature`)
+3. 💾 Committa le modifiche (`git commit -m 'Add some AmazingFeature'`)
+4. 📤 Pusha sul branch (`git push origin feature/AmazingFeature`)
+5. 🔄 Apri una Pull Request
+
+## 📄 Licenza
+
+Distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
+
+## 📧 Contatti
+
+Sergio Cima - [@tuotwitter](https://twitter.com/tuotwitter)
+
+Link Progetto: [https://github.com/tuousername/planetalert](https://github.com/tuousername/planetalert)

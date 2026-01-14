@@ -1,3 +1,6 @@
+import { db } from '@/lib/db';
+import { events, sources } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import type { Event } from "@/types/event"
 import type { Source } from "@/types/source"
 
@@ -135,24 +138,79 @@ const sourcesData: Source[] = [
 ]
 
 // Funzioni per interagire con i dati
-export function getEvents(): Event[] {
-  // In un'applicazione reale, qui ci sarebbe una chiamata a un database
-  return eventsData
+export async function getEvents(): Promise<Event[]> {
+  const dbEvents = await db.query.events.findMany({
+    with: {
+      sources: true,
+    },
+  });
+  return dbEvents.map(formatEvent);
 }
 
-export function getEventById(id: string): Event | undefined {
-  // In un'applicazione reale, qui ci sarebbe una query al database
-  return eventsData.find((event) => event.id === id)
+export async function getEventById(id: string): Promise<Event | undefined> {
+  const dbEvent = await db.query.events.findFirst({
+    where: eq(events.id, parseInt(id)),
+    with: {
+      sources: true,
+    },
+  });
+  return dbEvent ? formatEvent(dbEvent) : undefined;
 }
 
-export function getRelatedSources(eventId: string): Source[] {
-  // In un'applicazione reale, qui ci sarebbe una query al database
-  return sourcesData.filter((source) => source.eventId === eventId)
+export async function getRelatedSources(eventId: string): Promise<Source[]> {
+  const dbSources = await db.query.sources.findMany({
+    where: eq(sources.eventId, parseInt(eventId)),
+  });
+  return dbSources.map(formatSource);
 }
 
-export function createEvent(eventData: Omit<Event, "id">): string {
-  // In un'applicazione reale, qui ci sarebbe un'inserimento nel database
-  const newId = (eventsData.length + 1).toString()
+export async function createEvent(eventData: Omit<Event, "id">): Promise<string> {
+  const [dbEvent] = await db.insert(events).values({
+    title: eventData.title,
+    type: eventData.type,
+    location: eventData.location,
+    latitude: eventData.latitude,
+    longitude: eventData.longitude,
+    date: new Date(eventData.date),
+    description: eventData.description,
+    scientificAnalysis: eventData.scientificAnalysis,
+    severity: eventData.severity,
+    status: eventData.status,
+    affectedArea: eventData.affectedArea,
+    casualties: eventData.casualties,
+    economicDamage: eventData.economicDamage,
+  }).returning();
 
-  return newId
+  return dbEvent.id.toString();
+}
+
+function formatEvent(dbEvent: any): Event {
+  return {
+    id: dbEvent.id.toString(),
+    title: dbEvent.title,
+    type: dbEvent.type,
+    location: dbEvent.location,
+    latitude: parseFloat(dbEvent.latitude),
+    longitude: parseFloat(dbEvent.longitude),
+    date: dbEvent.date.toISOString(),
+    description: dbEvent.description,
+    scientificAnalysis: dbEvent.scientificAnalysis,
+    severity: dbEvent.severity,
+    status: dbEvent.status,
+    affectedArea: parseFloat(dbEvent.affectedArea),
+    casualties: dbEvent.casualties,
+    economicDamage: dbEvent.economicDamage,
+  };
+}
+
+function formatSource(dbSource: any): Source {
+  return {
+    id: dbSource.id.toString(),
+    eventId: dbSource.eventId.toString(),
+    title: dbSource.title,
+    author: dbSource.author,
+    type: dbSource.type,
+    url: dbSource.url,
+    date: dbSource.date.toISOString(),
+  };
 }

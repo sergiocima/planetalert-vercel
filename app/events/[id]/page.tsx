@@ -1,148 +1,99 @@
 import { getEventById, getRelatedSources } from "@/lib/events"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, MapPin, AlertTriangle, FileText } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { format } from "date-fns"
-import { it } from "date-fns/locale"
 import { notFound } from "next/navigation"
-import EventMap from "@/components/event-map"
-import SourcesList from "@/components/sources-list"
 
 export default function EventPage({ params }: { params: { id: string } }) {
   const event = getEventById(params.id)
-
+  
   if (!event) {
     notFound()
   }
 
-  const sources = getRelatedSources(params.id)
+  const sources = getRelatedSources(event.id)
+  const eventDate = new Date(event.date).toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
 
   return (
     <main className="container mx-auto p-4">
       <div className="mb-6">
         <Link href="/">
-          <Button variant="ghost">← Torna alla mappa</Button>
+          <Button variant="outline">← Torna alla mappa</Button>
         </Link>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <CardTitle className="text-2xl">{event.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1 mt-2">
-                    <MapPin className="h-4 w-4" />
-                    {event.location}
-                  </CardDescription>
-                  <CardDescription className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(event.date), "d MMMM yyyy", { locale: it })}
-                  </CardDescription>
-                </div>
-                <Badge className="text-sm" variant={getEventTypeBadgeVariant(event.type)}>
-                  {event.type}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-line">{event.description}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Analisi Scientifica</CardTitle>
-              <CardDescription>Commento basato su fonti scientifiche e report locali</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-line">{event.scientificAnalysis}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="h-[400px]">
-            <CardHeader className="pb-0">
-              <CardTitle>Posizione dell'evento</CardTitle>
-            </CardHeader>
-            <CardContent className="h-full pt-4">
-              <EventMap events={[event]} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dettagli Evento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <CardTitle className="text-2xl">{event.title}</CardTitle>
+              <Badge variant={getEventTypeBadgeVariant(event.type)}>{event.type}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
               <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Gravità</h3>
-                <div className="flex items-center">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <AlertTriangle
-                      key={i}
-                      className={`h-5 w-5 ${i < event.severity ? "text-destructive" : "text-muted-foreground opacity-25"}`}
-                    />
-                  ))}
-                </div>
+                <h3 className="font-semibold mb-2">Informazioni generali</h3>
+                <dl className="grid grid-cols-2 gap-2 text-sm">
+                  <dt className="font-medium">Località:</dt>
+                  <dd>{event.location}</dd>
+                  <dt className="font-medium">Data:</dt>
+                  <dd>{eventDate}</dd>
+                  <dt className="font-medium">Stato:</dt>
+                  <dd>{event.status}</dd>
+                  <dt className="font-medium">Gravità:</dt>
+                  <dd>{event.severity}/5</dd>
+                  <dt className="font-medium">Area colpita:</dt>
+                  <dd>{event.affectedArea.toLocaleString()} km²</dd>
+                  <dt className="font-medium">Vittime:</dt>
+                  <dd>{event.casualties}</dd>
+                  <dt className="font-medium">Danni stimati:</dt>
+                  <dd>{event.economicDamage}</dd>
+                </dl>
               </div>
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Stato</h3>
-                <Badge variant={event.status === "In corso" ? "destructive" : "outline"}>{event.status}</Badge>
-              </div>
-              <div>
-                <h3 className="font-medium text-sm text-muted-foreground mb-1">Area interessata</h3>
-                <p>{event.affectedArea} km²</p>
-              </div>
-              {event.casualties !== undefined && (
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Vittime</h3>
-                  <p>{event.casualties}</p>
-                </div>
-              )}
-              {event.economicDamage && (
-                <div>
-                  <h3 className="font-medium text-sm text-muted-foreground mb-1">Danni economici stimati</h3>
-                  <p>{event.economicDamage}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Fonti ({sources.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SourcesList sources={sources} />
-            </CardContent>
-          </Card>
+              <div>
+                <h3 className="font-semibold mb-2">Descrizione</h3>
+                <p className="text-sm">{event.description}</p>
+              </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Azioni</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href={`/events/${event.id}/edit`} className="w-full">
-                <Button variant="outline" className="w-full">
-                  Modifica evento
-                </Button>
-              </Link>
-              <Link href={`/sources/new?eventId=${event.id}`} className="w-full">
-                <Button variant="outline" className="w-full">
-                  Aggiungi fonte
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+              <div>
+                <h3 className="font-semibold mb-2">Analisi scientifica</h3>
+                <p className="text-sm whitespace-pre-line">{event.scientificAnalysis}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Fonti e approfondimenti</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3">
+              {sources.map((source) => (
+                <li key={source.id} className="text-sm">
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-3 border rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <div className="font-medium mb-1">{source.title}</div>
+                    <div className="text-muted-foreground">
+                      {source.author} - {new Date(source.date).toLocaleDateString("it-IT")}
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </main>
   )

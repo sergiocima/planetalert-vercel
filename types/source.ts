@@ -1,9 +1,9 @@
-export interface Source {
+export type Source = {
   id: string
   eventId: string
   title: string
   author: string
-  type: "article" | "link" | "file"
-  url?: string
+  type: "article" | "link"
+  url: string
   date: string
 }
